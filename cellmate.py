@@ -1,4 +1,4 @@
-# import argparse
+import argparse
 
 from apiclient.discovery import build
 
@@ -7,7 +7,7 @@ simple class for reading/write with a single Google Sheets cell programmatically
 
 would be great to add a flag to force a type of the update...for isntance, so one could
 update a formula externally, which is valueType "formulaValue" not "stringValue"...or
-so one could read in cmdline args and know if '99' is supposed to be a string or an int
+so one could read in cmdline args and know if '99' is supposed to be a string or an int.
 """
 
 class Cellmate(object):
@@ -104,26 +104,67 @@ class Cellmate(object):
 if __name__ == "__main__":
     cellmate = Cellmate()
 
-    ssId = "1HCfCUGqoKBvf0wsrbJezyqwYyjnPYe-Vd9Xtbx_VZWw"
-    sheetName = "Sheet1"
-    cell = "A1"
+    MAGIC_PREFIX = "#Cellmate Configuration Details"
 
-    # val = cellmate.getValue(ssId, sheetName, "C1")
-    # cellmate.setValue(ssId, sheetName, "C1", "hello there")
-
-    """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--id", help="Spreadsheet ID", required=True)
-    parser.add_argument("-n", "--name", help="Sheet Name", required=True)
-    parser.add_argument("-r", "--row", type=int, help="Target Row", required=True)
-    parser.add_argument("-c", "--col", type=int, help="Target Column", required=True)
-    parser.add_argument("-v", "--value", help="Update Value", required=True)
+    parser.add_argument("-i", "--id", help="Spreadsheet ID")
+    parser.add_argument("-n", "--name", help="Sheet Name")
+    parser.add_argument("-c", "--cell", type=str, help="Target Cell")
+    parser.add_argument("-f", "--file", type=str, help="File to Read/Write")
+    parser.add_argument("-v", "--value", type=str, help="Value")
+
+    parser.add_argument("-o", "--op", type=str, help="Target Cell", required=True)
+
 
     args = vars(parser.parse_args())
     # if anything is missing we won't get past this point
 
-    stuffer = Stuffer()
-    spreadsheetId = args["id"]
-    sheetId = stuffer.getSheetId(spreadsheetId, args["name"])
-    stuffer.stuffValue(spreadsheetId, sheetId, args["row"], args["col"], args["value"])
-    """
+    ssId = args["id"]
+    sheetName = args["name"]
+    cell = args["cell"]
+    filename = args["file"]
+    value = args["value"]
+
+    if args["op"] == "store":
+        if (ssId == "" or sheetName == "" or cell == "" or filename == ""):
+            print "Missing required param - need id/name/cell/file"
+        else:
+            val = cellmate.getValue(ssId, sheetName, cell)
+            print "Storing value from " +  sheetName + "!:" + cell + " in '" + filename + "'"
+            headerLine = "{}\t{}\t{}\t{}\n".format(MAGIC_PREFIX,ssId,sheetName,cell)
+            with open(filename, "w") as textFile:
+                textFile.write(headerLine)
+                textFile.write(val)
+    elif args["op"] == "check":
+        if (ssId == "" or sheetName == "" or cell == ""):
+            print "Missing required param - need id/name/cell"
+        else:
+            val = cellmate.getValue(ssId, sheetName, cell)
+            print val
+    elif args["op"] == "update":
+        if (ssId == "" or sheetName == "" or cell == "" or value is None):
+            print "Missing required param - need id/name/cell/value"
+        else:
+            cellmate.setValue(ssId, sheetName, cell, value)
+    elif args["op"] == "upload":
+        if (filename == ""):
+            print "Missing required param"
+        else:
+            with open(filename, "r") as textFile:
+                contents = textFile.read()
+                segments = contents.split("\n", 1)
+
+                if (len(segments) == 2):
+                    firstLine = segments[0]
+                    firstChunks = firstLine.split("\t")
+                    if (firstChunks[0] == MAGIC_PREFIX and len(firstChunks) == 4):
+                        ssId = firstChunks[1]
+                        sheetName = firstChunks[2]
+                        cell = firstChunks[3]
+                        stuffToUpload = segments[1]
+                        print "Uploading '" + filename + "' contents to " + sheetName + "!" + cell
+                        cellmate.setValue(ssId, sheetName, cell, stuffToUpload)
+                    else:
+                        print "invalid input file"
+    else:
+        print "invalid op '" + args["op"] + "' - valid ops are 'store','check','upload','update'"

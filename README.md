@@ -13,11 +13,13 @@ Can be run from commandline in one of four modes:
 
 * python cellmate.py -i <spreadsheetId> -n 'SheetName' -c 'A1' -f foo.txt -o store
 This will pull the value from a given Google Sheets cell and store it in foo.txt, along
-with a special header. This header contains the spreadsheetId/sheetName/cell
+with a special header. This header contains the spreadsheetId/sheetName/cell. The header can
+also contain a "1" or "0" at the end to enable/disable upload to this destination. It can also include
+a tab-separated comment field at the end.
 
 * python cellmate.py -f foo.txt -o upload
-This will check foo.txt to see if it has the special header we expect. If so, it will
-figure out the right Google Sheets cell to talk to and attempt to upload the rest of the
+This will check foo.txt to see if it has the special header(s) we expect. If so, it will
+figure out the right Google Sheets cell on the appropriate sheet(s) to talk to and attempt to upload the rest of the
 file contents into that cell.
 
 * python cellmate.py -i <spreadsheetId> -n 'SheetName' -c 'A1' -o check

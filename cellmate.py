@@ -131,7 +131,7 @@ if __name__ == "__main__":
         else:
             val = cellmate.getValue(ssId, sheetName, cell)
             print "Storing value from " +  sheetName + "!:" + cell + " in '" + filename + "'"
-            headerLine = "{}\t{}\t{}\t{}\n".format(MAGIC_PREFIX,ssId,sheetName,cell)
+            headerLine = "{}\t{}\t{}\t{}\t{}\n".format(MAGIC_PREFIX,ssId,sheetName,cell,"1")
             with open(filename, "w") as textFile:
                 textFile.write(headerLine)
                 textFile.write(val)
@@ -152,19 +152,40 @@ if __name__ == "__main__":
         else:
             with open(filename, "r") as textFile:
                 contents = textFile.read()
-                segments = contents.split("\n", 1)
 
-                if (len(segments) == 2):
-                    firstLine = segments[0]
-                    firstChunks = firstLine.split("\t")
-                    if (firstChunks[0] == MAGIC_PREFIX and len(firstChunks) == 4):
-                        ssId = firstChunks[1]
-                        sheetName = firstChunks[2]
-                        cell = firstChunks[3]
-                        stuffToUpload = segments[1]
-                        print "Uploading '" + filename + "' contents to " + sheetName + "!" + cell
-                        cellmate.setValue(ssId, sheetName, cell, stuffToUpload)
+                segments = contents.split("\n")
+
+                destinationCounter = 0
+                destinations = []
+                while True:
+                    probe = segments[destinationCounter]
+
+                    chunks = probe.split("\t")
+                    if (chunks[0] == MAGIC_PREFIX and len(chunks) >= 4):
+                        if (len(chunks) == 4 or (len(chunks) >= 5 and int(chunks[4]) == 1)):
+                            destinations.append(probe)
+
+                        destinationCounter = destinationCounter + 1
                     else:
-                        print "invalid input file"
+                        break
+
+                if (len(destinations) > 0):
+                    stuffToUpload = "\n".join(segments[destinationCounter+1:])
+
+                    for d in destinations:
+                        chunks = d.split("\t")
+
+                        ssId = chunks[1]
+                        sheetName = chunks[2]
+                        cell = chunks[3]
+
+                        try:
+                            print "Uploading '" + filename + "' contents to " + sheetName + "!" + cell + " (" + ssId + ")..."
+                            cellmate.setValue(ssId, sheetName, cell, stuffToUpload)
+                        except:
+                            print "Error encountered; check spreadsheet permissions and file metadata."
+
+                else:
+                    print "No destinations enabled in file"
     else:
         print "invalid op '" + args["op"] + "' - valid ops are 'store','check','upload','update'"

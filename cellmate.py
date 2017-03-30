@@ -170,7 +170,7 @@ if __name__ == "__main__":
                         break
 
                 if (len(destinations) > 0):
-                    stuffToUpload = "\n".join(segments[destinationCounter+1:])
+                    stuffToUpload = "\n".join(segments[destinationCounter:])
 
                     for d in destinations:
                         chunks = d.split("\t")
